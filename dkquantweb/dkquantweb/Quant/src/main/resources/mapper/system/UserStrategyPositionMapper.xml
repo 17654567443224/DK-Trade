@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UserStrategyPositionMapper">
+    
+    <resultMap type="UserStrategyPosition" id="UserStrategyPositionResult">
+        <result property="id"    column="id"    />
+        <result property="strategyId"    column="strategy_id"    />
+        <result property="symbol"    column="symbol"    />
+        <result property="lever"    column="lever"      />
+        <result property="sz"    column="sz"    />
+        <result property="entryPrice"    column="entry_price"    />
+        <result property="tp"    column="tp"    />
+        <result property="sl"    column="sl"    />
+        <result property="createTime"    column="createTime"    />
+    </resultMap>
+
+    <sql id="selectUserStrategyPositionVo">
+        select id, strategy_id, symbol, lever, sz, entry_price, tp, sl, createTime from user_strategy_position
+    </sql>
+
+    <select id="selectUserStrategyPositionList" parameterType="UserStrategyPosition" resultMap="UserStrategyPositionResult">
+        <include refid="selectUserStrategyPositionVo"/>
+        <where>  
+            <if test="strategyId != null "> and strategy_id = #{strategyId}</if>
+            <if test="symbol != null  and symbol != ''"> and symbol = #{symbol}</if>
+            <if test="lever != null  and lever != ''"> and lever = #{lever}</if>
+            <if test="sz != null  and sz != ''"> and sz = #{sz}</if>
+            <if test="entryPrice != null  and entryPrice != ''"> and entry_price = #{entryPrice}</if>
+            <if test="tp != null  and tp != ''"> and tp = #{tp}</if>
+            <if test="sl != null  and sl != ''"> and sl = #{sl}</if>
+            <if test="createTime != null "> and createTime = #{createTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectUserStrategyPositionById" parameterType="Long" resultMap="UserStrategyPositionResult">
+        <include refid="selectUserStrategyPositionVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertUserStrategyPosition" parameterType="UserStrategyPosition" useGeneratedKeys="true" keyProperty="id">
+        insert into user_strategy_position
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id,</if>
+            <if test="symbol != null and symbol != ''">symbol,</if>
+            <if test="lever != null and lever != ''">lever,</if>
+            <if test="sz != null and sz != ''">sz,</if>
+            <if test="entryPrice != null and entryPrice != ''">entry_price,</if>
+            <if test="tp != null and tp != ''">tp,</if>
+            <if test="sl != null and sl != ''">sl,</if>
+            <if test="createTime != null">createTime,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">#{strategyId},</if>
+            <if test="symbol != null and symbol != ''">#{symbol},</if>
+            <if test="lever != null and lever != ''">#{lever},</if>
+            <if test="sz != null and sz != ''">#{sz},</if>
+            <if test="entryPrice != null and entryPrice != ''">#{entryPrice},</if>
+            <if test="tp != null and tp != ''">#{tp},</if>
+            <if test="sl != null and sl != ''">#{sl},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateUserStrategyPosition" parameterType="UserStrategyPosition">
+        update user_strategy_position
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id = #{strategyId},</if>
+            <if test="symbol != null and symbol != ''">symbol = #{symbol},</if>
+            <if test="lever != null and lever != ''">lever = #{lever},</if>
+            <if test="sz != null and sz != ''">sz = #{sz},</if>
+            <if test="entryPrice != null and entryPrice != ''">entry_price = #{entryPrice},</if>
+            <if test="tp != null and tp != ''">tp = #{tp},</if>
+            <if test="sl != null and sl != ''">sl = #{sl},</if>
+            <if test="createTime != null">createTime = #{createTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUserStrategyPositionById" parameterType="Long">
+        delete from user_strategy_position where id = #{id}
+    </delete>
+
+    <delete id="deleteUserStrategyPositionByIds" parameterType="String">
+        delete from user_strategy_position where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

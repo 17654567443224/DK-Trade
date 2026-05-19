@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UpdatePlanRecordMapper">
+    
+    <resultMap type="com.ruoyi.dk.quant.domain.UpdatePlanRecord" id="UpdatePlanRecordResult">
+        <id property="id" column="id"/>
+        <result property="planId" column="plan_id"/>
+        <result property="content" column="content"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="type" column="type"/>
+    </resultMap>
+
+    <sql id="selectUpdatePlanRecordVo">
+        select id, plan_id, content, update_time, type
+        from update_plan_record
+    </sql>
+
+    <select id="selectUpdatePlanRecordList" parameterType="com.ruoyi.dk.quant.domain.UpdatePlanRecord" resultMap="UpdatePlanRecordResult">
+        <include refid="selectUpdatePlanRecordVo"/>
+        <where>
+            <if test="planId != null">
+                AND plan_id = #{planId}
+            </if>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+        </where>
+        order by update_time desc
+    </select>
+    
+    <select id="selectUpdatePlanRecordsByPlanId" parameterType="Long" resultMap="UpdatePlanRecordResult">
+        <include refid="selectUpdatePlanRecordVo"/>
+        where plan_id = #{planId}
+        order by update_time desc
+    </select>
+    
+    <select id="selectUpdatePlanRecordById" parameterType="Long" resultMap="UpdatePlanRecordResult">
+        <include refid="selectUpdatePlanRecordVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertUpdatePlanRecord" parameterType="com.ruoyi.dk.quant.domain.UpdatePlanRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into update_plan_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="planId != null">plan_id,</if>
+            <if test="content != null">content,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="type != null">type,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="planId != null">#{planId},</if>
+            <if test="content != null">#{content},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="type != null">#{type},</if>
+        </trim>
+    </insert>
+
+    <update id="updateUpdatePlanRecord" parameterType="com.ruoyi.dk.quant.domain.UpdatePlanRecord">
+        update update_plan_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="content != null">content = #{content},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="type != null">type = #{type},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUpdatePlanRecordById" parameterType="Long">
+        delete from update_plan_record where id = #{id}
+    </delete>
+
+    <delete id="deleteUpdatePlanRecordByIds" parameterType="Long">
+        delete from update_plan_record where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+    <delete id="deleteUpdatePlanRecordByPlanId" parameterType="Long">
+        delete from update_plan_record where plan_id = #{planId}
+    </delete>
+    
+</mapper> 

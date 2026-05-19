@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.FunctionFundMapper">
+    
+    <resultMap type="FunctionFund" id="FunctionFundResult">
+        <result property="id"    column="id"    />
+        <result property="fundId"    column="fund_id"    />
+        <result property="funName"    column="fun_name"    />
+        <result property="func"    column="func"    />
+        <result property="args"    column="args"   typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"/>
+    </resultMap>
+
+    <sql id="selectFunctionFundVo">
+        select id, fund_id, fun_name, func, args from func_fund
+    </sql>
+
+    <select id="selectFunctionFundList" parameterType="FunctionFund" resultMap="FunctionFundResult">
+        <include refid="selectFunctionFundVo"/>
+        <where>  
+            <if test="fundId != null "> and fund_id = #{fundId}</if>
+            <if test="funName != null  and funName != ''"> and fun_name like concat('%', #{funName}, '%')</if>
+            <if test="func != null  and func != ''"> and func = #{func}</if>
+            <if test="args != null  and args != ''"> and args = #{args}</if>
+        </where>
+    </select>
+    
+    <select id="selectFunctionFundById" parameterType="Long" resultMap="FunctionFundResult">
+        <include refid="selectFunctionFundVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFunctionFund" parameterType="FunctionFund" useGeneratedKeys="true" keyProperty="id">
+        insert into func_fund
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fundId != null">fund_id,</if>
+            <if test="funName != null and funName != ''">fun_name,</if>
+            <if test="func != null and func != ''">func,</if>
+            <if test="args != null">args,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fundId != null">#{fundId},</if>
+            <if test="funName != null and funName != ''">#{funName},</if>
+            <if test="func != null and func != ''">#{func},</if>
+            <if test="args != null">#{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFunctionFund" parameterType="FunctionFund">
+        update func_fund
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="fundId != null">fund_id = #{fundId},</if>
+            <if test="funName != null and funName != ''">fun_name = #{funName},</if>
+            <if test="func != null and func != ''">func = #{func},</if>
+            <if test="args != null">args = #{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFunctionFundById" parameterType="Long">
+        delete from func_fund where id = #{id}
+    </delete>
+
+    <delete id="deleteFunctionFundByIds" parameterType="String">
+        delete from func_fund where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

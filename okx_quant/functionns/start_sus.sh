@@ -1,0 +1,1 @@
+nohup python -u sustainable_trade.py > nohup_log_sus.out 2>&1 &

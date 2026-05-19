@@ -1,0 +1,1 @@
+nohup python -u algosroce_new.py > nohup_log_algoscore.out 2>&1 &

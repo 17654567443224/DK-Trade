@@ -1,0 +1,1 @@
+nohup python -u Opportunity_trade.py > nohup_log_op.out 2>&1 &

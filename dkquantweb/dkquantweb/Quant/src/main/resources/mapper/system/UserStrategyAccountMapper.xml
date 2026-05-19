@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UserStrategyAccountMapper">
+    
+    <resultMap type="UserStrategyAccount" id="UserStrategyAccountResult">
+        <result property="id"    column="id"    />
+        <result property="balance"    column="balance"    />
+        <result property="orderFee"    column="order_fee"    />
+    </resultMap>
+
+    <sql id="selectUserStrategyAccountVo">
+        select id, balance, order_fee from user_strategy_account
+    </sql>
+
+    <select id="selectUserStrategyAccountList" parameterType="UserStrategyAccount" resultMap="UserStrategyAccountResult">
+        <include refid="selectUserStrategyAccountVo"/>
+        <where>  
+            <if test="balance != null  and balance != ''"> and balance = #{balance}</if>
+            <if test="orderFee != null  and orderFee != ''"> and order_fee = #{orderFee}</if>
+        </where>
+    </select>
+    
+    <select id="selectUserStrategyAccountById" parameterType="Long" resultMap="UserStrategyAccountResult">
+        <include refid="selectUserStrategyAccountVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertUserStrategyAccount" parameterType="UserStrategyAccount" useGeneratedKeys="true" keyProperty="id">
+        insert into user_strategy_account
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="balance != null and balance != ''">balance,</if>
+            <if test="orderFee != null and orderFee != ''">order_fee,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="balance != null and balance != ''">#{balance},</if>
+            <if test="orderFee != null and orderFee != ''">#{orderFee},</if>
+         </trim>
+    </insert>
+
+    <update id="updateUserStrategyAccount" parameterType="UserStrategyAccount">
+        update user_strategy_account
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="balance != null and balance != ''">balance = #{balance},</if>
+            <if test="orderFee != null and orderFee != ''">order_fee = #{orderFee},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUserStrategyAccountById" parameterType="Long">
+        delete from user_strategy_account where id = #{id}
+    </delete>
+
+    <delete id="deleteUserStrategyAccountByIds" parameterType="String">
+        delete from user_strategy_account where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

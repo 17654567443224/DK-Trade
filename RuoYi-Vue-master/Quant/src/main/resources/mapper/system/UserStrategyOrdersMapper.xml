@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UserStrategyOrdersMapper">
+    
+    <resultMap type="UserStrategyOrders" id="UserStrategyOrdersResult">
+        <result property="id"    column="id"    />
+        <result property="strategyId"    column="strategy_id"    />
+        <result property="symbol"    column="symbol"    />
+        <result property="lever"    column="lever" />
+        <result property="type"    column="type"    />
+        <result property="entryPrice"    column="entry_price"    />
+        <result property="price"    column="price"    />
+        <result property="sz"    column="sz"    />
+        <result property="time"    column="time"    />
+        <result property="pnl"    column="pnl"    />
+        <result property="pnlRatio"    column="pnl_ratio"    />
+        <result property="exitType"    column="exit_type"    />
+    </resultMap>
+
+    <sql id="selectUserStrategyOrdersVo">
+        select id, strategy_id, symbol, lever, type, entry_price, price, sz, time, pnl, pnl_ratio, exit_type from user_strategy_orders
+    </sql>
+
+    <select id="selectUserStrategyOrdersList" parameterType="UserStrategyOrders" resultMap="UserStrategyOrdersResult">
+        <include refid="selectUserStrategyOrdersVo"/>
+        <where>  
+            <if test="strategyId != null "> and strategy_id = #{strategyId}</if>
+            <if test="symbol != null  and symbol != ''"> and symbol = #{symbol}</if>
+            <if test="lever != null  and lever != ''"> and lever = #{lever}</if>
+            <if test="type != null  and type != ''"> and type = #{type}</if>
+            <if test="entryPrice != null  and entryPrice != ''"> and entry_price = #{entryPrice}</if>
+            <if test="price != null  and price != ''"> and price = #{price}</if>
+            <if test="sz != null  and sz != ''"> and sz = #{sz}</if>
+            <if test="time != null "> and time = #{time}</if>
+            <if test="pnl != null  and pnl != ''"> and pnl = #{pnl}</if>
+            <if test="pnlRatio != null  and pnlRatio != ''"> and pnl_ratio = #{pnlRatio}</if>
+            <if test="exitType != null  and exitType != ''"> and exit_type = #{exitType}</if>
+        </where>
+    </select>
+    
+    <select id="selectUserStrategyOrdersById" parameterType="Long" resultMap="UserStrategyOrdersResult">
+        <include refid="selectUserStrategyOrdersVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertUserStrategyOrders" parameterType="UserStrategyOrders" useGeneratedKeys="true" keyProperty="id">
+        insert into user_strategy_orders
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id,</if>
+            <if test="symbol != null and symbol != ''">symbol,</if>
+            <if test="lever != null and lever != ''">lever,</if>
+            <if test="type != null and type != ''">type,</if>
+            <if test="entryPrice != null and entryPrice != ''">entry_price,</if>
+            <if test="price != null and price != ''">price,</if>
+            <if test="sz != null and sz != ''">sz,</if>
+            <if test="time != null">time,</if>
+            <if test="pnl != null and pnl != ''">pnl,</if>
+            <if test="pnlRatio != null and pnlRatio != ''">pnl_ratio,</if>
+            <if test="exitType != null and exitType != ''">exit_type,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">#{strategyId},</if>
+            <if test="symbol != null and symbol != ''">#{symbol},</if>
+            <if test="lever != null and lever != ''">#{lever},</if>
+            <if test="type != null and type != ''">#{type},</if>
+            <if test="entryPrice != null and entryPrice != ''">#{entryPrice},</if>
+            <if test="price != null and price != ''">#{price},</if>
+            <if test="sz != null and sz != ''">#{sz},</if>
+            <if test="time != null">#{time},</if>
+            <if test="pnl != null and pnl != ''">#{pnl},</if>
+            <if test="pnlRatio != null and pnlRatio != ''">#{pnlRatio},</if>
+            <if test="exitType != null and exitType != ''">#{exitType},</if>
+         </trim>
+    </insert>
+
+    <update id="updateUserStrategyOrders" parameterType="UserStrategyOrders">
+        update user_strategy_orders
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id = #{strategyId},</if>
+            <if test="symbol != null and symbol != ''">symbol = #{symbol},</if>
+            <if test="lever != null and lever != ''">lever = #{lever},</if>
+            <if test="type != null and type != ''">type = #{type},</if>
+            <if test="entryPrice != null and entryPrice != ''">entry_price = #{entryPrice},</if>
+            <if test="price != null and price != ''">price = #{price},</if>
+            <if test="sz != null and sz != ''">sz = #{sz},</if>
+            <if test="time != null">time = #{time},</if>
+            <if test="pnl != null and pnl != ''">pnl = #{pnl},</if>
+            <if test="pnlRatio != null and pnlRatio != ''">pnl_ratio = #{pnlRatio},</if>
+            <if test="exitType != null and exitType != ''">exit_type = #{exitType},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUserStrategyOrdersById" parameterType="Long">
+        delete from user_strategy_orders where id = #{id}
+    </delete>
+
+    <delete id="deleteUserStrategyOrdersByIds" parameterType="String">
+        delete from user_strategy_orders where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

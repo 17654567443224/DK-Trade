@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.ProfitLossTemplateMapper">
+    
+    <resultMap type="ProfitLossTemplate" id="ProfitLossTemplateResult">
+        <result property="id"    column="id"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="className"    column="class_name"    />
+        <result property="funName"    column="fun_name"    />
+        <result property="classArgs"    column="class_args"    typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"/>
+        <result property="funArgs"    column="fun_args"  typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"  />
+        <result property="classArgsDes"    column="class_args_des"    typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"/>
+        <result property="funArgsDes"    column="fun_args_des"  typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"  />
+        <result property="cnClassName"    column="cn_class_name"    />
+        <result property="cnFunName"    column="cn_fun_name"    />
+        <result property="owner"    column="owner"    />
+    </resultMap>
+
+    <sql id="selectProfitLossTemplateVo">
+        select id, file_name, class_name, fun_name, class_args, fun_args, class_args_des, fun_args_des, cn_class_name, cn_fun_name, owner from profit_loss_template
+    </sql>
+
+    <select id="selectProfitLossTemplateList" parameterType="ProfitLossTemplate" resultMap="ProfitLossTemplateResult">
+        <include refid="selectProfitLossTemplateVo"/>
+        <where>  
+            <if test="fileName != null  and fileName != ''"> and file_name = #{fileName}</if>
+            <if test="className != null  and className != ''"> and class_name = #{className}</if>
+            <if test="funName != null  and funName != ''"> and fun_name = #{funName}</if>
+            <if test="classArgs != null  and classArgs != ''"> and class_args = #{classArgs}</if>
+            <if test="funArgs != null  and funArgs != ''"> and fun_args = #{funArgs}</if>
+            <if test="classArgsDes != null  and classArgsDes != ''"> and class_args_des = #{classArgsDes}</if>
+            <if test="funArgsDes != null  and funArgsDes != ''"> and fun_args_des = #{funArgsDes}</if>
+            <if test="cnClassName != null  and cnClassName != ''"> and cn_class_name = #{cnClassName}</if>
+            <if test="cnFunName != null  and cnFunName != ''"> and cn_fun_name = #{cnFunName}</if>
+            <if test="owner != null  and owner != ''"> and owner = #{owner}</if>
+        </where>
+    </select>
+    
+    <select id="selectProfitLossTemplateById" parameterType="Long" resultMap="ProfitLossTemplateResult">
+        <include refid="selectProfitLossTemplateVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertProfitLossTemplate" parameterType="ProfitLossTemplate" useGeneratedKeys="true" keyProperty="id">
+        insert into profit_loss_template
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="fileName != null">file_name,</if>
+            <if test="className != null">class_name,</if>
+            <if test="funName != null">fun_name,</if>
+            <if test="classArgs != null">class_args,</if>
+            <if test="funArgs != null">fun_args,</if>
+            <if test="classArgsDes != null">class_args_des,</if>
+            <if test="funArgsDes != null">fun_args_des,</if>
+            <if test="cnClassName != null">cn_class_name,</if>
+            <if test="cnFunName != null">cn_fun_name,</if>
+            <if test="owner != null">owner,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="fileName != null">#{fileName},</if>
+            <if test="className != null">#{className},</if>
+            <if test="funName != null">#{funName},</if>
+            <if test="classArgs != null">#{classArgs, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="funArgs != null">#{funArgs, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="classArgsDes != null">#{classArgsDes, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="funArgsDes != null">#{funArgsDes, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="cnClassName != null">#{cnClassName},</if>
+            <if test="cnFunName != null">#{cnFunName},</if>
+            <if test="owner != null">#{owner},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProfitLossTemplate" parameterType="ProfitLossTemplate">
+        update profit_loss_template
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="fileName != null">file_name = #{fileName},</if>
+            <if test="className != null">class_name = #{className},</if>
+            <if test="funName != null">fun_name = #{funName},</if>
+            <if test="classArgs != null">class_args = #{classArgs, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="funArgs != null">fun_args = #{funArgs, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="classArgsDes != null">class_args_des = #{classArgsDes, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="funArgsDes != null">fun_args_des = #{funArgsDes, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+            <if test="cnClassName != null">cn_class_name = #{cnClassName},</if>
+            <if test="cnFunName != null">cn_fun_name = #{cnFunName},</if>
+            <if test="owner != null">cn_fun_name = #{owner},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteProfitLossTemplateById" parameterType="Long">
+        delete from profit_loss_template where id = #{id}
+    </delete>
+
+    <delete id="deleteProfitLossTemplateByIds" parameterType="String">
+        delete from profit_loss_template where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

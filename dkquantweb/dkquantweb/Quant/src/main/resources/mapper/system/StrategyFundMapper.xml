@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.StrategyFundMapper">
+    
+    <resultMap type="StrategyFund" id="StrategyFundResult">
+        <result property="id"    column="id"    />
+        <result property="owner"    column="owner"    />
+        <result property="fundName"    column="fund_name"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="className"    column="class_name"    />
+        <result property="args"    column="args"    typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"/>
+    </resultMap>
+
+    <sql id="selectStrategyFundVo">
+        select id, owner, fund_name, file_name, class_name, args from strategy_fund
+    </sql>
+
+    <select id="selectStrategyFundList" parameterType="StrategyFund" resultMap="StrategyFundResult">
+        <include refid="selectStrategyFundVo"/>
+        <where>  
+            <if test="owner != null "> and owner = #{owner}</if>
+            <if test="fundName != null  and fundName != ''"> and fund_name like concat('%', #{fundName}, '%')</if>
+            <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="className != null  and className != ''"> and class_name like concat('%', #{className}, '%')</if>
+            <if test="args != null  and args != ''"> and args = #{args}</if>
+        </where>
+    </select>
+    
+    <select id="selectStrategyFundById" parameterType="Long" resultMap="StrategyFundResult">
+        <include refid="selectStrategyFundVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertStrategyFund" parameterType="StrategyFund" useGeneratedKeys="true" keyProperty="id">
+        insert into strategy_fund
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="owner != null">owner,</if>
+            <if test="fundName != null and fundName != ''">fund_name,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="className != null and className != ''">class_name,</if>
+            <if test="args != null">args,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="owner != null">#{owner},</if>
+            <if test="fundName != null and fundName != ''">#{fundName},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="className != null and className != ''">#{className},</if>
+            <if test="args != null">#{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStrategyFund" parameterType="StrategyFund">
+        update strategy_fund
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="owner != null">owner = #{owner},</if>
+            <if test="fundName != null and fundName != ''">fund_name = #{fundName},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="className != null and className != ''">class_name = #{className},</if>
+            <if test="args != null">args = #{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStrategyFundById" parameterType="Long">
+        delete from strategy_fund where id = #{id}
+    </delete>
+
+    <delete id="deleteStrategyFundByIds" parameterType="String">
+        delete from strategy_fund where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

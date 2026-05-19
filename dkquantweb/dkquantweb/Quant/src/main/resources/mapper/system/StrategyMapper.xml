@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.StrategyMapper">
+    
+    <resultMap type="Strategy" id="StrategyResult">
+        <result property="id"    column="id"    />
+        <result property="strategyName"    column="strategy_name"    />
+        <result property="owner"    column="owner"    />
+        <result property="accountId"    column="account_id"    />
+        <result property="lever"    column="lever"    />
+        <result property="maxPosition"    column="max_position"    />
+        <result property="argsId"    column="args_id"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectStrategyVo">
+        select id, strategy_name, owner, account_id, lever, max_position, args_id, del_flag, create_by, create_time, update_by, update_time, remark from strategy
+    </sql>
+
+    <select id="selectStrategyList" parameterType="Strategy" resultMap="StrategyResult">
+        <include refid="selectStrategyVo"/>
+        <where>  
+            <if test="strategyName != null  and strategyName != ''"> and strategy_name = #{strategyName}</if>
+            <if test="owner != null  and owner != ''"> and owner = #{owner}</if>
+            <if test="accountId != null "> and account_id = #{accountId}</if>
+            <if test="lever != null  and lever != ''"> and lever = #{lever}</if>
+            <if test="maxPosition != null "> and max_position = #{maxPosition}</if>
+            <if test="argsId != null "> and args_id = #{argsId}</if>
+        </where>
+    </select>
+    
+    <select id="selectStrategyById" parameterType="Long" resultMap="StrategyResult">
+        <include refid="selectStrategyVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertStrategy" parameterType="Strategy" useGeneratedKeys="true" keyProperty="id">
+        insert into strategy
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="strategyName != null and strategyName != ''">strategy_name,</if>
+            <if test="owner != null and owner != ''">owner,</if>
+            <if test="accountId != null">account_id,</if>
+            <if test="lever != null">lever,</if>
+            <if test="maxPosition != null">max_position,</if>
+            <if test="argsId != null">args_id,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="strategyName != null and strategyName != ''">#{strategyName},</if>
+            <if test="owner != null and owner != ''">#{owner},</if>
+            <if test="accountId != null">#{accountId},</if>
+            <if test="lever != null and lever != ''">#{lever},</if>
+            <if test="maxPosition != null">#{maxPosition},</if>
+            <if test="argsId != null">#{argsId},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStrategy" parameterType="Strategy">
+        update strategy
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="strategyName != null and strategyName != ''">strategy_name = #{strategyName},</if>
+            <if test="owner != null and owner != ''">owner = #{owner},</if>
+            <if test="accountId != null">account_id = #{accountId},</if>
+            <if test="lever != null and lever != ''">lever = #{lever},</if>
+            <if test="maxPosition != null">max_position = #{maxPosition},</if>
+            <if test="argsId != null">args_id = #{argsId},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStrategyById" parameterType="Long">
+        delete from strategy where id = #{id}
+    </delete>
+
+    <delete id="deleteStrategyByIds" parameterType="String">
+        delete from strategy where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

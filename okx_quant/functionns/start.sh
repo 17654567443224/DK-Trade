@@ -1,0 +1,1 @@
+nohup python -u one_symbol_tradev4.0.py > nohup_log.out 2>&1 &

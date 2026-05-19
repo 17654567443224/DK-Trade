@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.StrategyGenerateReportMapper">
+    
+    <resultMap type="StrategyGenerateReport" id="StrategyGenerateReportResult">
+        <result property="id"    column="id"    />
+        <result property="strategyId"    column="strategy_id"    />
+        <result property="finalBalance"    column="final_balance"    />
+        <result property="maxDrawdown"    column="max_drawdown"    />
+        <result property="winRate"    column="win_rate"    />
+        <result property="maxProfit"    column="max_profit"    />
+        <result property="maxLoss"    column="max_loss"    />
+        <result property="totalTrades"    column="total_trades"    />
+        <result property="sharpeRatio"    column="sharpe_ratio"    />
+        <result property="annualizedReturn"    column="annualized_return"    />
+        <result property="totalPnlratio"    column="total_pnlRatio"    />
+    </resultMap>
+
+    <sql id="selectStrategyGenerateReportVo">
+        select id, strategy_id, final_balance, max_drawdown, win_rate, max_profit, max_loss, total_trades, sharpe_ratio, annualized_return, total_pnlRatio from strategy_generate_report
+    </sql>
+
+    <select id="selectStrategyGenerateReportList" parameterType="StrategyGenerateReport" resultMap="StrategyGenerateReportResult">
+        <include refid="selectStrategyGenerateReportVo"/>
+        <where>
+            <if test="strategyId != null "> and strategy_id = #{strategyId}</if>
+            <if test="finalBalance != null "> and final_balance = #{finalBalance}</if>
+            <if test="maxDrawdown != null "> and max_drawdown = #{maxDrawdown}</if>
+            <if test="winRate != null "> and win_rate = #{winRate}</if>
+            <if test="maxProfit != null "> and max_profit = #{maxProfit}</if>
+            <if test="maxLoss != null "> and max_loss = #{maxLoss}</if>
+            <if test="totalTrades != null "> and total_trades = #{totalTrades}</if>
+            <if test="sharpeRatio != null "> and sharpe_ratio = #{sharpeRatio}</if>
+            <if test="annualizedReturn != null "> and annualized_return = #{annualizedReturn}</if>
+            <if test="totalPnlratio != null "> and total_pnlRatio = #{totalPnlratio}</if>
+        </where>
+    </select>
+    
+    <select id="selectStrategyGenerateReportById" parameterType="Long" resultMap="StrategyGenerateReportResult">
+        <include refid="selectStrategyGenerateReportVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertStrategyGenerateReport" parameterType="StrategyGenerateReport" useGeneratedKeys="true" keyProperty="id">
+        insert into strategy_generate_report
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id,</if>
+            <if test="finalBalance != null">final_balance,</if>
+            <if test="maxDrawdown != null">max_drawdown,</if>
+            <if test="winRate != null">win_rate,</if>
+            <if test="maxProfit != null">max_profit,</if>
+            <if test="maxLoss != null">max_loss,</if>
+            <if test="totalTrades != null">total_trades,</if>
+            <if test="sharpeRatio != null">sharpe_ratio,</if>
+            <if test="annualizedReturn != null">annualized_return,</if>
+            <if test="totalPnlratio != null">total_pnlRatio,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="strategyId != null">#{strategyId},</if>
+            <if test="finalBalance != null">#{finalBalance},</if>
+            <if test="maxDrawdown != null">#{maxDrawdown},</if>
+            <if test="winRate != null">#{winRate},</if>
+            <if test="maxProfit != null">#{maxProfit},</if>
+            <if test="maxLoss != null">#{maxLoss},</if>
+            <if test="totalTrades != null">#{totalTrades},</if>
+            <if test="sharpeRatio != null">#{sharpeRatio},</if>
+            <if test="annualizedReturn != null">#{annualizedReturn},</if>
+            <if test="totalPnlratio != null">#{totalPnlratio},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStrategyGenerateReport" parameterType="StrategyGenerateReport">
+        update strategy_generate_report
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="strategyId != null">strategy_id = #{strategyId},</if>
+            <if test="finalBalance != null">final_balance = #{finalBalance},</if>
+            <if test="maxDrawdown != null">max_drawdown = #{maxDrawdown},</if>
+            <if test="winRate != null">win_rate = #{winRate},</if>
+            <if test="maxProfit != null">max_profit = #{maxProfit},</if>
+            <if test="maxLoss != null">max_loss = #{maxLoss},</if>
+            <if test="totalTrades != null">total_trades = #{totalTrades},</if>
+            <if test="sharpeRatio != null">sharpe_ratio = #{sharpeRatio},</if>
+            <if test="annualizedReturn != null">annualized_return = #{annualizedReturn},</if>
+            <if test="totalPnlratio != null">total_pnlRatio = #{totalPnlratio},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStrategyGenerateReportById" parameterType="Long">
+        delete from strategy_generate_report where id = #{id}
+    </delete>
+
+    <delete id="deleteStrategyGenerateReportByIds" parameterType="String">
+        delete from strategy_generate_report where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UpdatePlanMapper">
+    
+    <resultMap type="com.ruoyi.dk.quant.domain.UpdatePlan" id="UpdatePlanResult">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="progress" column="progress"/>
+        <result property="createTime" column="create_time"/>
+        <result property="dueDate" column="due_date"/>
+        <result property="tags" column="tags"/>
+        <result property="createBy" column="create_by"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectUpdatePlanVo">
+        select id, title, description, content, status, progress, create_time, due_date, tags,
+               create_by, update_by, update_time
+        from update_plan
+    </sql>
+
+    <select id="selectUpdatePlanList" parameterType="com.ruoyi.dk.quant.domain.UpdatePlan" resultMap="UpdatePlanResult">
+        <include refid="selectUpdatePlanVo"/>
+        <where>
+            <if test="title != null and title != ''">
+                AND title like concat('%', #{title}, '%')
+            </if>
+            <if test="description != null and description != ''">
+                AND description like concat('%', #{description}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="tags != null and tags != ''">
+                AND tags like concat('%', #{tags}, '%')
+            </if>
+        </where>
+        <if test="sort != null and sort == 'date'">
+            order by create_time desc
+        </if>
+        <if test="sort != null and sort == 'dueDate'">
+            order by due_date asc
+        </if>
+        <if test="sort == null or sort == ''">
+            order by create_time desc
+        </if>
+    </select>
+    
+    <select id="selectUpdatePlanCount" parameterType="com.ruoyi.dk.quant.domain.UpdatePlan" resultType="int">
+        select count(1)
+        from update_plan
+        <where>
+            <if test="title != null and title != ''">
+                AND title like concat('%', #{title}, '%')
+            </if>
+            <if test="description != null and description != ''">
+                AND description like concat('%', #{description}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="tags != null and tags != ''">
+                AND tags like concat('%', #{tags}, '%')
+            </if>
+        </where>
+    </select>
+    
+    <select id="selectUpdatePlanById" parameterType="Long" resultMap="UpdatePlanResult">
+        <include refid="selectUpdatePlanVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertUpdatePlan" parameterType="com.ruoyi.dk.quant.domain.UpdatePlan" useGeneratedKeys="true" keyProperty="id">
+        insert into update_plan
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="title != null">title,</if>
+            <if test="description != null">description,</if>
+            <if test="content != null">content,</if>
+            <if test="status != null">status,</if>
+            <if test="progress != null">progress,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="dueDate != null">due_date,</if>
+            <if test="tags != null">tags,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="title != null">#{title},</if>
+            <if test="description != null">#{description},</if>
+            <if test="content != null">#{content},</if>
+            <if test="status != null">#{status},</if>
+            <if test="progress != null">#{progress},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="dueDate != null">#{dueDate},</if>
+            <if test="tags != null">#{tags},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updateUpdatePlan" parameterType="com.ruoyi.dk.quant.domain.UpdatePlan">
+        update update_plan
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="progress != null">progress = #{progress},</if>
+            <if test="dueDate != null">due_date = #{dueDate},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUpdatePlanById" parameterType="Long">
+        delete from update_plan where id = #{id}
+    </delete>
+
+    <delete id="deleteUpdatePlanByIds" parameterType="Long">
+        delete from update_plan where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    
+</mapper> 

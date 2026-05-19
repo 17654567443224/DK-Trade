@@ -1,0 +1,1 @@
+nohup python -u algotrade.py > nohup_log_algo.out 2>&1 &

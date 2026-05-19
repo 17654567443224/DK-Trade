@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.UserStrategyArgsMapper">
+    
+    <resultMap type="UserStrategyArgs" id="UserStrategyArgsResult">
+        <result property="id"    column="id"    />
+        <result property="pv"    column="pv"    />
+        <result property="symbolSelection"    column="symbol_selection"    />
+        <result property="openPosition"    column="open_position"    />
+        <result property="profitLoss"    column="profit_loss"    />
+        <result property="fund"    column="fund"    />
+    </resultMap>
+
+    <sql id="selectUserStrategyArgsVo">
+        select id, pv, symbol_selection, open_position, profit_loss, fund from user_strategy_args
+    </sql>
+
+    <select id="selectUserStrategyArgsList" parameterType="UserStrategyArgs" resultMap="UserStrategyArgsResult">
+        <include refid="selectUserStrategyArgsVo"/>
+        <where>  
+            <if test="pv != null  and pv != ''"> and pv = #{pv}</if>
+            <if test="symbolSelection != null  and symbolSelection != ''"> and symbol_selection = #{symbolSelection}</if>
+            <if test="openPosition != null  and openPosition != ''"> and open_position = #{openPosition}</if>
+            <if test="profitLoss != null  and profitLoss != ''"> and profit_loss = #{profitLoss}</if>
+            <if test="fund != null  and fund != ''"> and fund = #{fund}</if>
+
+        </where>
+    </select>
+    
+    <select id="selectUserStrategyArgsById" parameterType="Long" resultMap="UserStrategyArgsResult">
+        <include refid="selectUserStrategyArgsVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertUserStrategyArgs" parameterType="UserStrategyArgs" useGeneratedKeys="true" keyProperty="id">
+        insert into user_strategy_args
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="pv != null">pv,</if>
+            <if test="symbolSelection != null">symbol_selection,</if>
+            <if test="openPosition != null">open_position,</if>
+            <if test="profitLoss != null">profit_loss,</if>
+            <if test="fund != null">fund,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="pv != null">#{pv},</if>
+            <if test="symbolSelection != null">#{symbolSelection},</if>
+            <if test="openPosition != null">#{openPosition},</if>
+            <if test="profitLoss != null">#{profitLoss},</if>
+            <if test="fund != null">#{fund},</if>
+         </trim>
+    </insert>
+
+    <update id="updateUserStrategyArgs" parameterType="UserStrategyArgs">
+        update user_strategy_args
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="pv != null">pv = #{pv},</if>
+            <if test="symbolSelection != null">symbol_selection = #{symbolSelection},</if>
+            <if test="openPosition != null">open_position = #{openPosition},</if>
+            <if test="profitLoss != null">profit_loss = #{profitLoss},</if>
+            <if test="fund != null">fund = #{fund},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteUserStrategyArgsById" parameterType="Long">
+        delete from user_strategy_args where id = #{id}
+    </delete>
+
+    <delete id="deleteUserStrategyArgsByIds" parameterType="String">
+        delete from user_strategy_args where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

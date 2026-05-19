@@ -1,0 +1,851 @@
+import asyncio
+import base64
+import datetime
+import hmac
+import json
+import time
+import zlib
+import setting
+import requests
+import websockets
+import threading
+import deal_data
+from typing import Optional
+import okx.Market_api as Market
+import okx.Account_api as Account
+import okx.Public_api as Public
+from decimal import Decimal
+from enum import Enum
+from utils import deal_message,  retry_on_exception_sync, retry_on_exception_decorator
+from queue import Queue
+import okx.Trade_api as Trade
+import sys
+if sys.platform == "win32" and sys.version_info >= (3, 8, 0):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+class Interval(Enum):
+    CANDLE_3M = "candle3M"
+    CANDLE_1M = "candle1M"
+    CANDLE_1W = "candle1W"
+    CANDLE_1D = "candle1D"
+    CANDLE_2D = "candle2D"
+    CANDLE_3D = "candle3D"
+    CANDLE_5D = "candle5D"
+    CANDLE_12H = "candle12H"
+    CANDLE_6H = "candle6H"
+    CANDLE_4H = "candle4H"
+    CANDLE_2H = "candle2H"
+    CANDLE_1H = "candle1H"
+    CANDLE_30m = "candle30m"
+    CANDLE_15m = "candle15m"
+    CANDLE_5m = "candle5m"
+    CANDLE_3m = "candle3m"
+    CANDLE_1m = "candle1m"
+
+class websocket_funs:
+    def __init__(self):
+        self.marketAPI = Market.MarketAPI(True)
+        self.accountAPI = Account.AccountAPI()
+        self.symbol_ls = []
+        self.avg_switch = False
+        self.start_time: Optional[time]
+        self.publicAPI = Public.PublicAPI(False)
+        self.tradeAPI = Trade.TradeAPI(False)
+        self.accountAPI.get_position_mode('long_short_mode')
+        self.order_switch = False
+        self.strike_sym_ls = []  # 成交的订单
+        self.order_ls = []  # 历史仓位信息
+        self.order_dict = {}  # 订单字典（发出的订单，成交未知）
+        self.order_algo = {}  # 止盈止损订单字典
+        self.get_pnl_ls()
+        self.price_dict = None
+        self.multiplier = self.iniy_multiplier()
+        self.init_ba = self.get_banlance_all()
+        self.symbol_ls_pr = []
+
+    @retry_on_exception_sync
+    def cancel_wait_order(self, symbol):
+        result = deal_message(self.tradeAPI.get_order_list(instType='SWAP', uly='', instFamily='', instId='', ordType='limit', state='', after='',
+                                         before='', limit=''))
+
+        if result:
+            for i in result:
+                if i.get('state') == 'live':
+                    ordId = i.get('ordId')
+                    sym = i.get('instId')
+                    u_time = int(i.get('uTime')) / 1000
+                    e_time = int(int(self.get_server_time()) / 1000) - int(u_time)
+                    time.sleep(0.2)
+                    if e_time > setting.order_wait_time:
+                        res = deal_message(self.tradeAPI.cancel_order(sym, ordId=ordId))
+                        if res[0].get('sMsg') == "":
+                            print("撤单成功")
+
+                            if symbol in self.order_dict:
+                                del self.order_dict[symbol]
+                                return -1
+                        else:
+                            print("撤单失败")
+                    if sym == symbol:
+                        return -1
+                elif i.get('state') == 'partially_filled':
+                    return -1
+            return 1
+
+    def get_pnl_ls(self):
+        #  限速十秒一次	 String	否	平仓类型1：部分平仓;2：完全平仓;3：强平;4：强减; 5：ADL自动减仓;  缓存
+        while True:
+            try:
+                print("获取历史仓位")
+                res = deal_message(
+                    self.accountAPI.get_positions_history(instType='SWAP', instId='', mgnMode='isolated', type='2',
+                                                          after=self.get_server_time(), before='',
+                                                          limit='', posId=''))
+                if res:
+                    for i in res:
+                        r = i.get('pnl')
+                        self.order_ls.append(r)
+                    print("历史仓位获取完成", self.order_ls)
+                    break
+            except:
+                print("网络卡顿")
+                time.sleep(10)
+
+    def get_price(self, symbol: list, q: Queue):  # load_interval：根据多少跟kline计算
+        """
+        返回symbol和avg组成的字典
+        :param symbol:
+        :return:
+        """
+        st_time = int(time.time())
+        result = None
+        count = 0
+        price_ls = []
+        for i in symbol:
+            count += 1
+            if count % 20 == 0:
+                time.sleep(2)
+
+            while True:  # 无限循环直到获取成功
+                try:
+                    result = deal_message(self.marketAPI.get_markprice_candlesticks(i, limit=setting.load_interval))
+                    break  # 成功获取，退出无限循环
+                except:
+                    print(0)
+                    time.sleep(2)  # 2秒延迟再次尝试
+                    continue  # 重新尝试
+            max_high_price = max(Decimal(res_max[2]) for res_max in result)
+            min_low_price = min(Decimal(res_min[3]) for res_min in result)
+            max_low_price = max(Decimal(res_min[3]) for res_min in result)  # 最低价里面的最高价
+            min_high_price = min(Decimal(res_max[2]) for res_max in result)  # 最高价里面的最低价
+            if (max_high_price - min_high_price) > setting.quick_tradingview and (max_low_price - min_low_price) > setting.quick_tradingview:
+                max_high_price = result[-1][2]
+                min_low_price = result[-1][3]
+            price_ls.append([max_high_price, min_low_price])
+        ed_time = int(time.time())
+        cal_time = ed_time - st_time
+        if cal_time < 10:
+            time.sleep(cal_time)
+        print("成功获取交易对")
+        sym_avg_dict = dict(zip(symbol, price_ls))
+        print(sym_avg_dict)
+        q.put(sym_avg_dict)
+
+    def symbol_monitor(self, interval: Interval):
+        """
+        base: mark_price_?interval
+        :return:
+        """
+        self.position_monitor()
+        thread = threading.Thread(target=self.order_monitor)
+        thread.start()
+        while True:
+            symbol_ls = deal_data.get_symbol(only_symbol=True, count=setting.symbol_count)
+            self.symbol_ls = symbol_ls
+            print("监控交易对")
+            thread = threading.Thread(target=self.run_public_thread, args=(symbol_ls, interval.value,))
+            thread.start()
+            thread.join()
+
+    def run_public_thread(self, symbol_ls, interval):
+        self.start_time = time.time()
+        print("异步启动")
+        asyncio.run(self.subscribe_symbol(symbol_ls, interval, ))
+
+    async def subscribe_symbol(self, symbol: list, interval):
+        channels = []
+        for s in symbol:
+            channels.append({"channel": "mark-price-" + interval, "instId": str(s)})
+        print("订阅数据")
+        await self.subscribe_without_login(channels, url=setting.mark_klprice)
+
+    # data:实时价格 result:key:symbol val:max,min   symbol：实时交易对  data: [['1697550300000', '28231.1', '28280.2', '28128.3', '28247.6', '0']]
+    async def cal_tradingview(self, result, symbol, data):
+        for r in result.keys():
+            if symbol == r and symbol not in self.strike_sym_ls and symbol not in self.order_dict:
+                if Decimal(data[0][2]) > Decimal(result[r][0]):  # 0：时间戳 1：o 2：h 3：l 4：c
+                    price = Decimal(data[0][2]) * Decimal(0.997)
+                    price = self.match_precision(Decimal(price), Decimal(data[0][2]))  # price：str
+                    trading_view = 1  # 多
+                    print("触发开多")
+                    if self.cancel_wait_order(symbol) == -1:
+                        print("已有改交易对订单", symbol)
+                        continue
+                    self.trading(trading_view, symbol, price)
+                elif Decimal(data[0][3]) < Decimal(result[r][1]):
+                    trading_view = 0  # 空
+                    print("触发开空")
+                    price = Decimal(data[0][3]) * Decimal(1.003)
+                    price = self.match_precision(Decimal(price), Decimal(data[0][3]))
+                    if self.cancel_wait_order(symbol) == -1:
+                        print("已有改交易对订单, 更新订单信息", symbol)
+                        continue
+                    self.trading(trading_view, symbol, price)
+
+    @retry_on_exception_sync
+    def get_banlance_all(self):  #  获取总余额
+        banlance_all = Decimal(deal_message(self.accountAPI.get_account(ccy='USDT'))[0]['details'][0]['cashBal'])
+        return banlance_all
+
+    @retry_on_exception_sync
+    def get_banlance_avail(self):  #  获取可用余额
+        banlance_avail = Decimal(deal_message(self.accountAPI.get_account(ccy='USDT'))[0]['details'][0]['availBal'])
+        return banlance_avail
+
+    def get_position_tiers(self, symbol, lever):  # 获取仓位档位
+        switch = True
+        while switch == True:
+            try:
+                switch = False
+                symbol = self.remove_swap(symbol)
+                result = deal_message(self.publicAPI.get_tier(instType='SWAP', instFamily=symbol, tdMode='isolated'))
+                for i in result:
+                    if i['maxSz'] is None or i['minSz'] is None:
+                        continue
+                    elif i['maxLever'] == lever:
+                        return i['maxSz'], i['minSz']
+                    elif int(i['maxLever']) > int(lever):
+                        continue
+                    elif int(i['maxLever']) < int(lever):
+                        return -1, i['maxLever']
+                return -1, -1
+            except:
+                switch = True
+
+    def remove_swap(self, symbol):
+        if '-SWAP' in symbol:
+            symbol = symbol.replace("-SWAP", "")
+        return symbol
+
+    def match_precision(self, dec1: Decimal, dec2: Decimal):  # 精度转化
+        precision = abs(dec2.as_tuple().exponent)
+        format_str = "{:." + str(precision) + "f}"
+        result_str = format_str.format(dec1)
+        return result_str
+
+    @retry_on_exception_sync
+    def convert_contract_coin(self, symbol, val, price, order_type):  # 张币转化 price:限价 val：usdt数 order_type:  open开仓  close：平仓
+        cv_co = deal_message(self.publicAPI.convert_contract_coin(instId=f'{symbol}-SWAP', sz=val, px=str(price), opType=order_type,unit='usds'))
+        return cv_co[0].get('sz')
+
+    @retry_on_exception_sync
+    def trade_logic(self, trading_view, bv, lever, symbol, price, ba):  # 交易逻辑
+        while True:   ###################
+            if lever == -1:
+                return
+            max_sz, min_sz = self.get_position_tiers(symbol, lever)  # 仓位档位
+            if max_sz and min_sz == -1:
+                return
+            if self.init_ba / Decimal(setting.total_fail_count) * Decimal(self.multiplier) > bv:
+                print("余额不足", self.multiplier)
+                return
+            size = Decimal(lever) * self.init_ba / Decimal(
+                setting.total_fail_count) * Decimal(self.multiplier)
+            sz = self.convert_contract_coin(symbol, order_type='open', price=price,
+                                            val=size)  # 1 3 9 27 60 =100   order_type:open close
+            print("仓位档位", sz, symbol, lever, self.multiplier)
+            if int(sz) > int(max_sz) and max_sz == -1 and min_sz != -1:
+                lever = min_sz
+                continue
+            elif int(sz) < int(min_sz):
+                print("余额不足")
+                return
+            elif int(sz) > int(max_sz):
+                lever = self.lever_down(lever)
+            break
+
+        if trading_view == 1:  # 多
+            print(symbol, price, sz)
+            result = self.accountAPI.set_leverage(instId=f'{symbol}-SWAP', lever=lever,
+                                                  mgnMode='isolated', posSide='long')  # 设置杠杆
+            print("设置杠杆")
+            res = self.tradeAPI.place_order(instId=f'{symbol}-SWAP', tdMode='isolated', side='buy', posSide='long', px=str(price),
+                                               ordType='limit', sz=sz, banAmend='',
+                                               quickMgnType='manual')
+            order_id = deal_message(res)[0].get('ordId')
+            self.order_dict[symbol+'-SWAP'] = order_id
+            print("开多", res, symbol)
+            return
+        elif trading_view == 0:  # 空
+            print(symbol, price, sz)
+            result = self.accountAPI.set_leverage(instId=f'{symbol}-SWAP', lever=lever,
+                                                  mgnMode='isolated', posSide='short')  # 设置杠杆
+            print("设置杠杆")
+            res = self.tradeAPI.place_order(instId=f'{symbol}-SWAP', tdMode='isolated', side='sell',
+                                            posSide='short',
+                                            ordType='limit', sz=sz, banAmend='', px=str(price),
+                                            quickMgnType='manual')
+            order_id = deal_message(res)[0].get('ordId')
+            self.order_dict[symbol+'-SWAP'] = order_id
+            print("开空", res, symbol)
+            return
+
+    def iniy_multiplier(self):
+        if Decimal(self.order_ls[0]) > Decimal(0):
+            multiplier = 1
+        else:
+            multiplier = 1
+            for i in range(len(self.order_ls)):
+                if i == 0:
+                    continue
+                if float(self.order_ls[i]) > 0:
+                    return multiplier
+                elif float(self.order_ls[i]) < 0:
+                    multiplier = multiplier * 3
+                if multiplier > setting.max_fail_count:
+                    exit()
+        return multiplier
+
+    def lever_down(self, lever):
+        if lever == '125':
+            return '100'
+        elif lever == '100':
+            return '75'
+        elif lever == '75':
+            return '66'
+        elif lever == '66':
+            return '50'
+        elif lever == '50':
+            return '40'
+        elif lever == '40':
+            return '33'
+        elif lever == '33':
+            return '25'
+        elif lever == '25':
+            return '20'
+        elif lever == '20':
+            return '5'
+        elif lever == '5':
+            return '2'
+        else:
+            return -1
+
+    async def subscribe_order(self):
+        # channels = [{"channel": "positions", "instType": "SWAP"}]
+        channels = [{"channel": "orders", "instType": "SWAP"}]
+        await self.subscribe(channels, url=setting.private_url)
+
+    def trading(self, tradingview, symbol, price):  # 1.获取账户余额  2.获取交易对最大可开杠杆倍数和开仓数量
+        symbol = self.remove_swap(symbol)
+        bv = self.get_banlance_avail()
+        ba = self.get_banlance_all()
+        if int(ba) < 10:
+            return
+        result = deal_message(self.publicAPI.get_instruments(instType='SWAP', instFamily=symbol))
+        lever = result[0]['lever']
+        self.trade_logic(tradingview, bv, lever, symbol, price, ba)
+        print(f"准备开仓,余额：{bv}")
+
+    def order_monitor(self):
+        order_thread = threading.Thread(target=self.run_in_thread)
+        order_thread.start()
+        if not order_thread.is_alive():
+            return self.order_monitor()
+
+
+    def position_monitor(self):
+        position_thread = threading.Thread(target=self.run_position_thread)
+        position_thread.start()
+        if not position_thread.is_alive():
+            return self.position_monitor()
+
+    def run_position_thread(self):
+        switch = True
+        while True:
+            try:
+                result = deal_message(self.accountAPI.get_positions('SWAP'))
+                result_his = deal_message(self.tradeAPI.order_algos_list('oco', instType='SWAP'))
+                self.symbol_ls_pr = []
+                for i in result:
+                    symbol = i['instId']
+                    self.symbol_ls_pr.append(symbol)
+                    liqpx = i['liqPx']
+                    avgpx = i['avgPx']
+                    avgpx = Decimal(avgpx)
+                    mode = i['posSide']
+                    sz = i['availPos']
+                    if mode == 'long':
+                        side = 'sell'
+                        posSide = 'long'
+                        slPx = avgpx - (abs(Decimal(avgpx) - Decimal(liqpx)) + Decimal(setting.liqpx_slip)*avgpx)  # 11+
+                        sl_tg = slPx + Decimal(avgpx)*Decimal(setting.Trigger_slip)
+                        tpPx = avgpx + (abs(Decimal(avgpx) - Decimal(liqpx)) + Decimal(setting.liqpx_slip)*avgpx)
+                        tp_tg = tpPx - Decimal(avgpx)*Decimal(setting.Trigger_slip)
+                    elif mode == 'short':
+                        side = 'buy'
+                        posSide = 'short'
+                        slPx = avgpx + (abs(Decimal(avgpx) - Decimal(liqpx)) - Decimal(setting.liqpx_slip)*avgpx)
+                        sl_tg = slPx - Decimal(avgpx) * Decimal(setting.Trigger_slip)
+                        tpPx = avgpx - (abs(Decimal(avgpx) - Decimal(liqpx)) - Decimal(setting.liqpx_slip)*avgpx)
+                        tp_tg = tpPx + Decimal(avgpx)*Decimal(setting.Trigger_slip)
+                    else:
+                        continue
+                    if symbol not in self.order_algo:
+                        slPx = self.match_precision(slPx, avgpx)
+                        sl_tg = self.match_precision(sl_tg, avgpx)
+                        tpPx = self.match_precision(tpPx, avgpx)
+                        tp_tg = self.match_precision(tp_tg, avgpx)
+                        result = self.tradeAPI.place_algo_order(symbol, 'isolated', side, ordType='oco',
+                                                           sz=sz, posSide=posSide, tpTriggerPx=str(tp_tg), tpOrdPx=str(tpPx),slTriggerPx=str(sl_tg),slOrdPx=str(slPx),
+                                                          tpTriggerPxType='mark', slTriggerPxType='mark')
+                        res = deal_message(result)
+                        print(res)
+                        if res[0].get('sCode') == '0':
+                            algoId = res[0].get('algoId')
+                            self.order_algo[symbol] = algoId
+                            print("止盈止损下单成功")
+                        else:
+                            print(res[0].get('sMsg'), symbol, slPx, sl_tg, tpPx, tp_tg, avgpx)
+
+                    if i['uplRatio']:
+                        if Decimal(i['uplRatio']) >= Decimal(setting.profit_per):  # 止盈
+                            price = i['last']
+                            res = self.close_position(symbol, mode, price, sz)
+                            self.strike_sym_ls = [x for x in self.strike_sym_ls if x != symbol]
+                            # algoId = self.order_algo[symbol]
+                            # res = deal_message(self.tradeAPI.cancel_algo_order([{'algoId': algoId, 'instId': symbol}]))
+                            if symbol in self.order_algo:
+                                del self.order_algo[symbol]
+                            if switch:
+                                self.multiplier = 1
+
+                        elif Decimal(i['uplRatio']) <= Decimal(setting.stop_loss):  # 止损
+                            price = i['markPx']
+                            res = self.close_position(symbol, mode, price, sz)
+                            # algoId = self.order_algo[symbol]
+                            self.strike_sym_ls = [x for x in self.strike_sym_ls if x != symbol]
+                            # res = deal_message(self.tradeAPI.cancel_algo_order([{'algoId': algoId, 'instId': symbol}]))
+                            if symbol in self.order_algo:
+                                del self.order_algo[symbol]
+                            if switch:
+                                self.multiplier = self.multiplier * 3
+                symbol_his = []
+                for i in result_his:
+                    old_symbol = i['instId']  # 止盈止损待成交订单symbol
+                    algoId = i['algoId']
+                    symbol_his.append(old_symbol)
+                    if old_symbol not in self.symbol_ls_pr:  # 仓位列表
+                        res = deal_message(self.tradeAPI.cancel_algo_order([{'algoId': algoId, 'instId': old_symbol}]))
+                        print("撤销无效止盈止损订单", old_symbol)
+                        if old_symbol in self.order_algo:
+                            del self.order_algo[old_symbol]
+                result_r = list(set(self.symbol_ls_pr) - set(symbol_his))
+                if result_r:
+                    print(result_r)
+                time.sleep(0.2)
+            except Exception as e:
+                # print("run_position_thread", e)
+                time.sleep(0.2)
+                switch = False
+
+    def run_in_thread(self):
+        asyncio.run(self.subscribe_order())
+
+    def get_timestamp(self):
+        now = datetime.datetime.now()
+        t = now.isoformat("T", "milliseconds")
+        return t + "Z"
+
+    def get_server_time(self):
+        url = "https://www.okx.com/api/v5/public/time"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()['data'][0]['ts']
+        else:
+            return ""
+
+    def get_local_timestamp(self):
+        return int(time.time())
+
+    def login_params(self, timestamp):
+        message = timestamp + 'GET' + '/users/self/verify'
+
+        mac = hmac.new(bytes(setting.secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
+        d = mac.digest()
+        sign = base64.b64encode(d)
+
+        login_param = {"op": "login", "args": [{"apiKey": setting.api_key,
+                                                "passphrase": setting.passphrase,
+                                                "timestamp": timestamp,
+                                                "sign": sign.decode("utf-8")}]}
+        login_str = json.dumps(login_param)
+        return login_str
+
+    def partial(self, res):
+        data_obj = res['data'][0]
+        bids = data_obj['bids']
+        asks = data_obj['asks']
+        instrument_id = res['arg']['instId']
+        # print('全量数据bids为：' + str(bids))
+        # print('档数为：' + str(len(bids)))
+        # print('全量数据asks为：' + str(asks))
+        # print('档数为：' + str(len(asks)))
+        return bids, asks, instrument_id
+
+    def update_bids(self, res, bids_p):
+        # 获取增量bids数据
+        bids_u = res['data'][0]['bids']
+        # print('增量数据bids为：' + str(bids_u))
+        # print('档数为：' + str(len(bids_u)))
+        # bids合并
+        for i in bids_u:
+            bid_price = i[0]
+            for j in bids_p:
+                if bid_price == j[0]:
+                    if i[1] == '0':
+                        bids_p.remove(j)
+                        break
+                    else:
+                        del j[1]
+                        j.insert(1, i[1])
+                        break
+            else:
+                if i[1] != "0":
+                    bids_p.append(i)
+        else:
+            bids_p.sort(key=lambda price: self.sort_num(price[0]), reverse=True)
+            # print('合并后的bids为：' + str(bids_p) + '，档数为：' + str(len(bids_p)))
+        return bids_p
+
+    def update_asks(self, res, asks_p):
+        # 获取增量asks数据
+        asks_u = res['data'][0]['asks']
+        # print('增量数据asks为：' + str(asks_u))
+        # print('档数为：' + str(len(asks_u)))
+        # asks合并
+        for i in asks_u:
+            ask_price = i[0]
+            for j in asks_p:
+                if ask_price == j[0]:
+                    if i[1] == '0':
+                        asks_p.remove(j)
+                        break
+                    else:
+                        del j[1]
+                        j.insert(1, i[1])
+                        break
+            else:
+                if i[1] != "0":
+                    asks_p.append(i)
+        else:
+            asks_p.sort(key=lambda price: self.sort_num(price[0]))
+            # print('合并后的asks为：' + str(asks_p) + '，档数为：' + str(len(asks_p)))
+        return asks_p
+
+    def sort_num(self, n):
+        if n.isdigit():
+            return int(n)
+        else:
+            return float(n)
+
+    def check(self, bids, asks):
+        # 获取bid档str
+        bids_l = []
+        bid_l = []
+        count_bid = 1
+        while count_bid <= 25:
+            if count_bid > len(bids):
+                break
+            bids_l.append(bids[count_bid - 1])
+            count_bid += 1
+        for j in bids_l:
+            str_bid = ':'.join(j[0: 2])
+            bid_l.append(str_bid)
+        # 获取ask档str
+        asks_l = []
+        ask_l = []
+        count_ask = 1
+        while count_ask <= 25:
+            if count_ask > len(asks):
+                break
+            asks_l.append(asks[count_ask - 1])
+            count_ask += 1
+        for k in asks_l:
+            str_ask = ':'.join(k[0: 2])
+            ask_l.append(str_ask)
+        # 拼接str
+        num = ''
+        if len(bid_l) == len(ask_l):
+            for m in range(len(bid_l)):
+                num += bid_l[m] + ':' + ask_l[m] + ':'
+        elif len(bid_l) > len(ask_l):
+            # bid档比ask档多
+            for n in range(len(ask_l)):
+                num += bid_l[n] + ':' + ask_l[n] + ':'
+            for l in range(len(ask_l), len(bid_l)):
+                num += bid_l[l] + ':'
+        elif len(bid_l) < len(ask_l):
+            # ask档比bid档多
+            for n in range(len(bid_l)):
+                num += bid_l[n] + ':' + ask_l[n] + ':'
+            for l in range(len(bid_l), len(ask_l)):
+                num += ask_l[l] + ':'
+
+        new_num = num[:-1]
+        int_checksum = zlib.crc32(new_num.encode())
+        fina = self.change(int_checksum)
+        return fina
+
+    def change(self, num_old):
+        num = pow(2, 31) - 1
+        if num_old > num:
+            out = num_old - num * 2 - 2
+        else:
+            out = num_old
+        return out
+
+    # subscribe channels un_need login
+    async def subscribe_without_login(self, channels, url=setting.public_url):
+        l = []
+        while True:
+            try:
+                async with websockets.connect(url) as ws:
+                    sub_param = {"op": "subscribe", "args": channels}
+                    sub_str = json.dumps(sub_param)
+                    await ws.send(sub_str)
+                    while True:
+                        try:
+                            res = await asyncio.wait_for(ws.recv(), timeout=25)
+                        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
+                            try:
+                                await ws.send('ping')
+                                res = await ws.recv()
+                                # print(res)
+                                continue
+                            except Exception as e:
+                                print("连接关闭，正在重连……")
+                                break
+                        # print(self.get_timestamp() + res)
+                        if time.time() - self.start_time >= setting.update_interval:
+                            self.avg_switch = False
+                            return
+                        res = json.loads(res)
+                        if 'event' in res:
+                            continue
+                        elif res.get('arg') and 'data' in res:
+                            symbol = res.get('arg')['instId']
+                            data = res.get('data')
+                            sever_time = int(self.get_local_timestamp())
+                            await asyncio.sleep(0.2)
+                            if sever_time % 1000 % setting.update_interval <= 10:  # 如果新的interval更新时间小于10秒，则认为新的kline出现，更新数据
+                                self.avg_switch = False
+                            if not self.avg_switch:
+                                q = Queue()
+                                g_thread = threading.Thread(target=self.get_price, args=(self.symbol_ls, q))
+                                g_thread.start()
+                                self.avg_switch = True
+                                self.price_dict = q.get()
+                                continue
+                            if g_thread.is_alive():
+                                continue
+                            # 判断有无开仓条件
+                            await self.cal_tradingview(self.price_dict, symbol, data)
+            except Exception as e:
+                print(e)
+                print("pb连接断开，正在重连……")
+                continue
+
+
+    # subscribe channels need login
+    async def subscribe(self, channels, url=setting.private_url):
+        while True:
+            try:
+                async with websockets.connect(url) as ws:
+                    # login
+                    timestamp = str(self.get_local_timestamp())
+                    login_str = self.login_params(timestamp)
+                    await ws.send(login_str)
+                    # print(f"send: {login_str}")
+                    res = await ws.recv()
+                    # subscribe
+                    sub_param = {"op": "subscribe", "args": channels}
+                    sub_str = json.dumps(sub_param)
+                    await ws.send(sub_str)
+                    while True:
+                        try:
+                            res = await asyncio.wait_for(ws.recv(), timeout=25)
+                        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
+                            try:
+                                await ws.send('ping')
+                                res = await ws.recv()
+                                continue
+                            except Exception as e:
+                                print("连接关闭，正在重连……")
+                                break
+                        res = json.loads(res)
+                        if 'event' in res:
+                            continue
+                        elif res.get('arg')['channel'] == 'orders':
+                            data = res.get('data')
+                            if data and isinstance(data, list):
+                                self.deal_order(data)
+
+            except Exception as e:
+                print("pv连接断开，正在重连……", e)
+                continue
+
+    @retry_on_exception_sync
+    def deal_order(self, data):
+        for i in data:
+            symbol = i.get('instId')
+            count = 0
+            if i.get('state') == 'filled' and symbol in self.order_algo:
+                if i.get('algoId'):
+                    if i.get('pnl') > 0:
+                        if count == 0:
+                            self.multiplier = 1
+                            count = count + 1
+                        self.strike_sym_ls = [x for x in self.strike_sym_ls if x != symbol]
+
+                    elif i.get('pnl') < 0:
+                        if count == 0:
+                            self.multiplier = self.multiplier * 3
+                            count = count + 1
+                        self.strike_sym_ls = [x for x in self.strike_sym_ls if x != symbol]
+                    if symbol in self.order_algo:
+                        del self.order_algo[symbol]
+                    continue
+            if i.get('state') == 'filled' and i['side'] == 'buy':  #  买单成交
+                symbol = i['instId']
+                if symbol not in self.strike_sym_ls:
+                    self.strike_sym_ls.append(symbol)
+                    print("买单成交")
+
+            elif i.get('state') == 'filled' and i['side'] == 'sell':  # 卖单成交
+                symbol = i['instId']
+                if symbol not in self.strike_sym_ls:
+                    self.strike_sym_ls.append(symbol)
+                    print("卖单成交")
+            else:
+                continue
+            if symbol in self.order_dict:
+                del self.order_dict[symbol]
+            print(symbol, self.strike_sym_ls, self.order_dict)
+
+    @retry_on_exception_sync
+    def close_position(self, symbol, mode, price, sz):  # 平仓  symbol, mode, price, sz
+        """
+        开多：买入开多（side 填写 buy； posSide 填写 long ）
+        开空：卖出开空（side 填写 sell； posSide 填写 short ）
+        平多：卖出平多（side 填写 sell；posSide 填写 long ）
+        平空：买入平空（side 填写 buy； posSide 填写 short ）
+        """
+
+        if mode == 'long':
+            side = 'sell'
+            posSide = 'long'
+        elif mode == 'short':
+            side = 'buy'
+            posSide = 'short'
+        else:
+            return
+        res = self.tradeAPI.place_order(instId=symbol, tdMode='isolated', side=side,
+                                  posSide=posSide,
+                                  ordType='limit', sz=sz, banAmend='', px=str(price),
+                                  quickMgnType='manual')
+
+
+    # trade
+    async def trade(self, trade_param, url=setting.private_url):
+        while True:
+            try:
+                async with websockets.connect(url) as ws:
+                    # login
+                    timestamp = str(self.get_local_timestamp())
+                    login_str = self.login_params(timestamp)
+                    await ws.send(login_str)
+                    # print(f"send: {login_str}")
+                    res = await ws.recv()
+                    print(res)
+
+                    # trade
+                    sub_str = json.dumps(trade_param)
+                    await ws.send(sub_str)
+                    print(f"send: {sub_str}")
+
+                    while True:
+                        try:
+                            res = await asyncio.wait_for(ws.recv(), timeout=25)
+                        except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
+                            try:
+                                await ws.send('ping')
+                                res = await ws.recv()
+                                print(res)
+                                continue
+                            except Exception as e:
+                                print("连接关闭，正在重连……")
+                                break
+
+                        print(self.get_timestamp() + res)
+
+            except Exception as e:
+                print("连接断开，正在重连……")
+                continue
+
+    # unsubscribe channels
+    async def unsubscribe(self, channels, url=setting.private_url):
+        async with websockets.connect(url) as ws:
+            # login
+            timestamp = str(self.get_local_timestamp())
+            login_str = self.login_params(timestamp)
+            await ws.send(login_str)
+            # print(f"send: {login_str}")
+
+            res = await ws.recv()
+            print(f"recv: {res}")
+
+            # unsubscribe
+            sub_param = {"op": "unsubscribe", "args": channels}
+            sub_str = json.dumps(sub_param)
+            await ws.send(sub_str)
+            print(f"send: {sub_str}")
+
+            res = await ws.recv()
+            print(f"recv: {res}")
+
+    # unsubscribe channels
+    async def unsubscribe_without_login(self, channels, url=setting.public_url):
+        async with websockets.connect(url) as ws:
+            # unsubscribe
+            sub_param = {"op": "unsubscribe", "args": channels}
+            sub_str = json.dumps(sub_param)
+            await ws.send(sub_str)
+            print(f"send: {sub_str}")
+
+            res = await ws.recv()
+            print(f"recv: {res}")
+
+    def run(self):
+        self.symbol_monitor(setting.interval)
+
+if __name__ == '__main__':
+    asd = websocket_funs()
+    # asd.symbol_monitor(interval=Interval.CANDLE_15m)
+    # print(int(time.time()*1000))
+    # asd.symbol_monitor(interval=Interval.CANDLE_15m)
+    # print(asd.get_position_tiers(symbol='ETH-USDT', lever='75'))
+    # print(asd.trading(tradingview=0, symbol='ETH-USDT-SWAP'))
+    # print("-----")
+    asd.run()
+    # print(time.time())
+    # print(asd.convert_contract_coin(symbol='ETH-USDT', val=18, price=1800, order_type='close'))
+    # asd.run_position_thread()

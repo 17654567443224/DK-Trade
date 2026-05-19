@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.StrategyPvMapper">
+    
+    <resultMap type="StrategyPv" id="StrategyPvResult">
+        <result property="id"    column="id"    />
+        <result property="owner"    column="owner"    />
+        <result property="strategyName"    column="strategy_name"    />
+        <result property="fileName"    column="file_name"    />
+        <result property="className"    column="class_name"    />
+        <result property="args"    column="args"   typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler" />
+    </resultMap>
+
+    <sql id="selectStrategyPvVo">
+        select id, owner, strategy_name, file_name, class_name, args from strategy_pv
+    </sql>
+
+    <select id="selectStrategyPvList" parameterType="StrategyPv" resultMap="StrategyPvResult">
+        <include refid="selectStrategyPvVo"/>
+        <where>  
+            <if test="owner != null "> and owner = #{owner}</if>
+            <if test="strategyName != null  and strategyName != ''"> and strategy_name like concat('%', #{strategyName}, '%')</if>
+            <if test="fileName != null  and fileName != ''"> and file_name like concat('%', #{fileName}, '%')</if>
+            <if test="className != null  and className != ''"> and class_name like concat('%', #{className}, '%')</if>
+            <if test="args != null  and args != ''"> and args = #{args}</if>
+        </where>
+    </select>
+    
+    <select id="selectStrategyPvById" parameterType="Long" resultMap="StrategyPvResult">
+        <include refid="selectStrategyPvVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertStrategyPv" parameterType="StrategyPv" useGeneratedKeys="true" keyProperty="id">
+        insert into strategy_pv
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="owner != null">owner,</if>
+            <if test="strategyName != null and strategyName != ''">strategy_name,</if>
+            <if test="fileName != null and fileName != ''">file_name,</if>
+            <if test="className != null and className != ''">class_name,</if>
+            <if test="args != null">args,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="owner != null">#{owner},</if>
+            <if test="strategyName != null and strategyName != ''">#{strategyName},</if>
+            <if test="fileName != null and fileName != ''">#{fileName},</if>
+            <if test="className != null and className != ''">#{className},</if>
+            <if test="args != null">#{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+         </trim>
+    </insert>
+
+    <update id="updateStrategyPv" parameterType="StrategyPv">
+        update strategy_pv
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="owner != null">owner = #{owner},</if>
+            <if test="strategyName != null and strategyName != ''">strategy_name = #{strategyName},</if>
+            <if test="fileName != null and fileName != ''">file_name = #{fileName},</if>
+            <if test="className != null and className != ''">class_name = #{className},</if>
+            <if test="args != null">args = #{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteStrategyPvById" parameterType="Long">
+        delete from strategy_pv where id = #{id}
+    </delete>
+
+    <delete id="deleteStrategyPvByIds" parameterType="String">
+        delete from strategy_pv where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

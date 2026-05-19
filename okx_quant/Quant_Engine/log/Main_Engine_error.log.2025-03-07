@@ -1,0 +1,35 @@
+2025-03-05 21:14:32,429 - Main_Engine_error.log - ERROR - 添加策略失败: 'message'
+2025-03-05 21:15:44,360 - Main_Engine_error.log - ERROR - 添加策略失败: 'message'
+2025-03-05 21:53:26,504 - Main_Engine_error.log - ERROR - 添加策略失败: 'message'
+2025-03-05 22:12:31,267 - Main_Engine_error.log - ERROR - 添加策略失败: 'userId'
+2025-03-06 20:50:27,319 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 22:30:14,153 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 22:37:53,598 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 22:47:24,593 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 22:47:26,131 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 22:48:54,844 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-06 23:24:58,793 - Main_Engine_error.log - ERROR - 添加策略失败: 'path'
+2025-03-06 23:43:47,091 - Main_Engine_error.log - ERROR - Could not load module from priceTimeInterval
+2025-03-07 00:27:56,352 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'priceTimeInterval.py'
+2025-03-07 00:27:58,958 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'priceTimeInterval.py'
+2025-03-07 01:40:25,188 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'Quant_Engine/template/symbols_selection/priceTimeInterval.py'
+2025-03-07 01:41:49,448 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'Quant_Engine/template/symbols_selection/priceTimeInterval.py'
+2025-03-07 01:42:55,666 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'Quant_Engine/template/symbols_selection/priceTimeInterval.py'
+2025-03-07 02:31:45,792 - Main_Engine_error.log - ERROR - 添加策略失败: [Errno 2] No such file or directory: 'template/open_position_template/customize.py'
+2025-03-07 02:38:42,393 - Main_Engine_error.log - ERROR - 添加策略失败: __init__() missing 3 required positional arguments: 'interval_count', 'symbol_count', and 'update_interval'
+2025-03-07 02:56:30,816 - Main_Engine_error.log - ERROR - 添加策略失败: the JSON object must be str, bytes or bytearray, not dict
+2025-03-07 03:34:45,318 - Main_Engine_error.log - ERROR - 添加策略失败: __init__() got an unexpected keyword argument 'sl_percent'
+2025-03-07 03:47:19,468 - Main_Engine_error.log - ERROR - 添加策略失败: __init__() missing 2 required positional arguments: 'order_fee' and 'lever'
+2025-03-07 03:53:04,672 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 03:54:04,538 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:07:13,581 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:08:21,015 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:09:46,990 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:12:07,488 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:13:20,639 - Main_Engine_error.log - ERROR - 添加策略失败: 'WebSocketProducer' object has no attribute 'regiest_consumer'
+2025-03-07 04:16:23,489 - Main_Engine_error.log - ERROR - 添加策略失败: string indices must be integers
+2025-03-07 04:21:25,591 - Main_Engine_error.log - ERROR - 添加策略失败: 'NoneType' object is not subscriptable
+2025-03-07 04:27:58,305 - Main_Engine_error.log - ERROR - 添加策略失败: 'NoneType' object is not subscriptable
+2025-03-07 04:33:51,783 - Main_Engine_error.log - ERROR - 添加策略失败: 'Customize' object has no attribute 'martin_investment'
+2025-03-07 04:35:22,908 - Main_Engine_error.log - ERROR - 添加策略失败: 'Customize' object has no attribute 'martin_investment'
+2025-03-07 19:34:39,642 - Main_Engine_error.log - ERROR - 运行策略失败: 'userId'

@@ -1,0 +1,1 @@
+nohup python -u quick_trade.py > nohup_log_quick.out 2>&1 &

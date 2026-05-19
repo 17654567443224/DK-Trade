@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.FunctionSymbolSelectionMapper">
+    
+    <resultMap type="FunctionSymbolSelection" id="FunctionSymbolSelectionResult">
+        <result property="id"    column="id"    />
+        <result property="symbolSelectionId"    column="symbol_selection_id"    />
+        <result property="funName"    column="fun_name"    />
+        <result property="func"    column="func"    />
+        <result property="args"    column="args"   typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler" />
+    </resultMap>
+
+    <sql id="selectFunctionSymbolSelectionVo">
+        select id, symbol_selection_id, fun_name, func, args from func_symbol_selection
+    </sql>
+
+    <select id="selectFunctionSymbolSelectionList" parameterType="FunctionSymbolSelection" resultMap="FunctionSymbolSelectionResult">
+        <include refid="selectFunctionSymbolSelectionVo"/>
+        <where>  
+            <if test="symbolSelectionId != null "> and symbol_selection_id = #{symbolSelectionId}</if>
+            <if test="funName != null  and funName != ''"> and fun_name like concat('%', #{funName}, '%')</if>
+            <if test="func != null  and func != ''"> and func = #{func}</if>
+            <if test="args != null  and args != ''"> and args = #{args}</if>
+        </where>
+    </select>
+    
+    <select id="selectFunctionSymbolSelectionById" parameterType="Long" resultMap="FunctionSymbolSelectionResult">
+        <include refid="selectFunctionSymbolSelectionVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFunctionSymbolSelection" parameterType="FunctionSymbolSelection" useGeneratedKeys="true" keyProperty="id">
+        insert into func_symbol_selection
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="symbolSelectionId != null">symbol_selection_id,</if>
+            <if test="funName != null and funName != ''">fun_name,</if>
+            <if test="func != null and func != ''">func,</if>
+            <if test="args != null">args,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="symbolSelectionId != null">#{symbolSelectionId},</if>
+            <if test="funName != null and funName != ''">#{funName},</if>
+            <if test="func != null and func != ''">#{func},</if>
+            <if test="args != null">#{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFunctionSymbolSelection" parameterType="FunctionSymbolSelection">
+        update func_symbol_selection
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="symbolSelectionId != null">symbol_selection_id = #{symbolSelectionId},</if>
+            <if test="funName != null and funName != ''">fun_name = #{funName},</if>
+            <if test="func != null and func != ''">func = #{func},</if>
+            <if test="args != null">args = #{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFunctionSymbolSelectionById" parameterType="Long">
+        delete from func_symbol_selection where id = #{id}
+    </delete>
+
+    <delete id="deleteFunctionSymbolSelectionByIds" parameterType="String">
+        delete from func_symbol_selection where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

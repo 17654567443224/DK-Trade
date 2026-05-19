@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.dk.quant.mapper.FunctionOpenPositionMapper">
+    
+    <resultMap type="FunctionOpenPosition" id="FunctionOpenPositionResult">
+        <result property="id"    column="id"    />
+        <result property="openPositionId"    column="open_position_id"    />
+        <result property="funName"    column="fun_name"    />
+        <result property="func"    column="func"    />
+        <result property="args"    column="args"    typeHandler="com.ruoyi.dk.quant.utils.MySqlJsonHandler"/>
+    </resultMap>
+
+    <sql id="selectFunctionOpenPositionVo">
+        select id, open_position_id, fun_name, func, args from func_open_position
+    </sql>
+
+    <select id="selectFunctionOpenPositionList" parameterType="FunctionOpenPosition" resultMap="FunctionOpenPositionResult">
+        <include refid="selectFunctionOpenPositionVo"/>
+        <where>  
+            <if test="openPositionId != null "> and open_position_id = #{openPositionId}</if>
+            <if test="funName != null  and funName != ''"> and fun_name like concat('%', #{funName}, '%')</if>
+            <if test="func != null  and func != ''"> and func = #{func}</if>
+            <if test="args != null  and args != ''"> and args = #{args}</if>
+        </where>
+    </select>
+    
+    <select id="selectFunctionOpenPositionById" parameterType="Long" resultMap="FunctionOpenPositionResult">
+        <include refid="selectFunctionOpenPositionVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertFunctionOpenPosition" parameterType="FunctionOpenPosition" useGeneratedKeys="true" keyProperty="id">
+        insert into func_open_position
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="openPositionId != null">open_position_id,</if>
+            <if test="funName != null and funName != ''">fun_name,</if>
+            <if test="func != null and func != ''">func,</if>
+            <if test="args != null">args,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="openPositionId != null">#{openPositionId},</if>
+            <if test="funName != null and funName != ''">#{funName},</if>
+            <if test="func != null and func != ''">#{func},</if>
+            <if test="args != null">#{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+         </trim>
+    </insert>
+
+    <update id="updateFunctionOpenPosition" parameterType="FunctionOpenPosition">
+        update func_open_position
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="openPositionId != null">open_position_id = #{openPositionId},</if>
+            <if test="funName != null and funName != ''">fun_name = #{funName},</if>
+            <if test="func != null and func != ''">func = #{func},</if>
+            <if test="args != null">args = #{args, typeHandler=com.ruoyi.dk.quant.utils.MySqlJsonHandler},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteFunctionOpenPositionById" parameterType="Long">
+        delete from func_open_position where id = #{id}
+    </delete>
+
+    <delete id="deleteFunctionOpenPositionByIds" parameterType="String">
+        delete from func_open_position where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
